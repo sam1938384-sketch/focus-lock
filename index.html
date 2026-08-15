@@ -229,7 +229,6 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
   let lastMotion = 0;
   let motionSamples = [];
   let motionArmedAt = 0;
-  let vibrationLoop = null;
 
   /* Motivation wall: intentionally subtle, so it feels like a hidden layer. */
   function buildMField(field, count=28){
@@ -335,32 +334,26 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
       if(audio.state === 'suspended') audio.resume();
 
-      /* Two detuned square waves + low oscillator = much heavier buzzer. */
+      /* Simple electronic buzzer: short, bright "TINGGG" tone. */
       const now = audio.currentTime;
-      const master = audio.createGain();
-      const filter = audio.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1500;
-      master.gain.setValueAtTime(.0001,now);
-      master.gain.exponentialRampToValueAtTime(.42,now+.012);
-      master.gain.exponentialRampToValueAtTime(.0001,now+.42);
-      filter.connect(master).connect(audio.destination);
+      const o = audio.createOscillator();
+      const g = audio.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(1450, now);
+      o.frequency.exponentialRampToValueAtTime(1180, now + .28);
 
-      [105,110,210].forEach((freq,i)=>{
-        const o=audio.createOscillator();
-        o.type=i===2?'sawtooth':'square';
-        o.frequency.value=freq;
-        const g=audio.createGain();
-        g.gain.value=i===2?.16:.32;
-        o.connect(g).connect(filter);
-        o.start(now);
-        o.stop(now+.44);
-      });
+      g.gain.setValueAtTime(.0001, now);
+      g.gain.exponentialRampToValueAtTime(.16, now + .012);
+      g.gain.exponentialRampToValueAtTime(.0001, now + .34);
+
+      o.connect(g).connect(audio.destination);
+      o.start(now);
+      o.stop(now + .36);
     }catch(e){}
   }
 
   function vibrate(){
-    if(navigator.vibrate) navigator.vibrate([250,120,250,120,500]);
+    if(navigator.vibrate) navigator.vibrate(180);
   }
 
   function triggerAlarm(){
@@ -373,10 +366,6 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
     alarmLeft=5;
     $('count').textContent='05';
     beep(); vibrate();
-    let vibrationLoop = setInterval(()=>{
-      if(state !== 'alarm'){ clearInterval(vibrationLoop); return; }
-      vibrate();
-    },900);
 
     clearInterval(alarmID);
     alarmID=setInterval(()=>{
@@ -397,8 +386,6 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
 
   async function returnToLock(){
     clearInterval(alarmID);
-    clearInterval(vibrationLoop);
-    vibrationLoop = null;
     if(navigator.vibrate) navigator.vibrate(0);
     state='lock';
     $('alarm').classList.remove('moving');
@@ -428,8 +415,6 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
     disarmMotion();
     clearInterval(timerID);
     clearInterval(alarmID);
-    clearInterval(vibrationLoop);
-    vibrationLoop = null;
     if(navigator.vibrate) navigator.vibrate(0);
     await releaseScreenAwake();
     try{ await document.exitFullscreen?.(); }catch(e){}
