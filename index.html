@@ -46,24 +46,29 @@ button{font:inherit;border:0;cursor:pointer}
 h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0}
 .tag{color:var(--muted);font-size:14px;margin:13px 0 34px}
 .start-btn{
-  position:relative;width:min(360px,100%);padding:17px 20px;border-radius:16px;color:#fff;
+  position:relative;width:min(360px,100%);padding:16px 22px;border-radius:999px;color:#fff;
   background:linear-gradient(135deg,#7657ff,#6244e8);
-  box-shadow:0 14px 40px var(--glow),inset 0 1px rgba(255,255,255,.2);
-  font-weight:700;letter-spacing:.01em;overflow:hidden;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 14px 40px var(--glow),inset 0 1px rgba(255,255,255,.25);
+  font-weight:700;letter-spacing:.04em;overflow:hidden;
+  transition:.18s ease;
 }
+.start-btn:active{transform:scale(.97)}
 .start-btn:before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.18),transparent);transform:translateX(-100%);animation:sweep 3s infinite}
 @keyframes sweep{45%,100%{transform:translateX(100%)}}
 .micro{margin-top:15px;color:#555a66;font:10px 'JetBrains Mono';letter-spacing:.08em}
 
 /* ---------- LOCK ---------- */
+#lock,#alarm{overflow:hidden}
 #lock{background:#050507;align-items:center;justify-content:center;flex-direction:column}
 .m-field{
   position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);
-  grid-auto-rows:1fr;gap:0;overflow:hidden;pointer-events:none;user-select:none;
+  grid-template-rows:repeat(7,1fr);gap:0;overflow:hidden;pointer-events:none;user-select:none;
+  z-index:0;
 }
 .m{
   display:grid;place-items:center;font:700 clamp(28px,8vw,58px) 'Space Grotesk';
-  color:rgba(167,139,250,.045);text-shadow:0 0 28px rgba(124,92,255,.03);
+  color:rgba(167,139,250,.085);text-shadow:0 0 28px rgba(124,92,255,.07);
   animation:drift 8s ease-in-out infinite alternate;
 }
 .m:nth-child(3n){animation-delay:-2s}.m:nth-child(4n){animation-delay:-5s}
@@ -88,9 +93,18 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
 .motivation strong{display:block;font:600 13px 'Space Grotesk';margin-bottom:5px}
 .motivation span{font-size:11px;color:#676c78}
 .end{
-  margin-top:15px;background:transparent;color:#505563;font-size:11px;padding:12px 18px
+  margin:20px auto 0;
+  padding:11px 17px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  color:#8d92a0;
+  font-size:11px;
+  background:rgba(16,17,23,.62);
+  backdrop-filter:blur(18px);
+  box-shadow:inset 0 1px rgba(255,255,255,.06),0 8px 28px rgba(0,0,0,.22);
+  transition:.2s ease;
 }
-.end:active{color:#fff}
+.end:active{color:#fff;transform:scale(.96);border-color:rgba(167,139,250,.35)}
 
 /* ---------- ALARM ---------- */
 #alarm{
@@ -112,11 +126,35 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
   font:700 65px 'JetBrains Mono';color:#fff;letter-spacing:-.08em;margin:8px 0 28px
 }
 .alarm-btn{
-  width:100%;padding:16px;border-radius:15px;background:#fff;color:#09090b;font-weight:700;
-  box-shadow:0 12px 35px rgba(255,255,255,.1)
+  width:100%;padding:16px;border-radius:999px;
+  background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(222,222,228,.94));
+  color:#09090b;font-weight:700;
+  box-shadow:0 12px 35px rgba(255,255,255,.12),inset 0 1px rgba(255,255,255,.9);
+  transition:.15s ease;
 }
-.alarm-btn:active{transform:scale(.98)}
-.alarm-hint{margin-top:14px;color:#4e535f;font:9px 'JetBrains Mono';letter-spacing:.12em}
+.alarm-btn:active{transform:scale(.97)}
+.alarm-hint{
+  margin-top:14px;color:#4e535f;font:9px 'JetBrains Mono';letter-spacing:.12em;
+  padding:8px 12px;border:1px solid rgba(255,255,255,.06);border-radius:999px;
+  display:inline-block;background:rgba(10,10,14,.35)
+}
+
+/* Movement state: the whole interface reacts violently while the alarm is active. */
+#alarm.moving .alarm-ui{animation:phoneShake .095s infinite}
+#alarm.moving .alarm-icon{}
+@keyframes phoneShake{
+  0%{transform:translate(0,0) rotate(0)}
+  20%{transform:translate(-4px,2px) rotate(-.8deg)}
+  40%{transform:translate(4px,-2px) rotate(.8deg)}
+  60%{transform:translate(-3px,-1px) rotate(-.5deg)}
+  80%{transform:translate(3px,2px) rotate(.6deg)}
+  100%{transform:translate(0,0) rotate(0)}
+}
+#alarm.moving .alarm-title{text-shadow:0 0 22px rgba(255,66,109,.75)}
+#alarm.moving .count{animation:countJolt .18s infinite}
+@keyframes countJolt{
+  50%{transform:scale(1.045);color:#fff}
+}
 
 /* ---------- TOAST ---------- */
 .toast{
@@ -159,6 +197,8 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
   </section>
 
   <section id="alarm" class="screen">
+    <div class="m-field" id="alarmMField"></div>
+    <div class="lock-vignette"></div>
     <div class="alarm-ui">
       <div class="alert-icon"><span>!</span></div>
       <div class="alarm-title">PHONE MOVED.</div>
@@ -189,15 +229,19 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
   let lastMotion = 0;
   let motionSamples = [];
   let motionArmedAt = 0;
+  let vibrationLoop = null;
 
   /* Motivation wall: intentionally subtle, so it feels like a hidden layer. */
-  const field = $('mField');
-  for(let i=0;i<28;i++){
-    const m = document.createElement('div');
-    m.className = 'm';
-    m.textContent = 'M';
-    field.appendChild(m);
+  function buildMField(field, count=28){
+    for(let i=0;i<count;i++){
+      const m = document.createElement('div');
+      m.className = 'm';
+      m.textContent = 'M';
+      field.appendChild(m);
+    }
   }
+  buildMField($('mField'),28);
+  buildMField($('alarmMField'),28);
 
   function show(id){
     screens.forEach(s => s.classList.remove('active'));
@@ -290,16 +334,28 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
     try{
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
       if(audio.state === 'suspended') audio.resume();
-      const o = audio.createOscillator();
-      const g = audio.createGain();
-      o.type='sine';
-      o.frequency.value=720;
-      g.gain.setValueAtTime(.0001,audio.currentTime);
-      g.gain.exponentialRampToValueAtTime(.22,audio.currentTime+.02);
-      g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.32);
-      o.connect(g).connect(audio.destination);
-      o.start();
-      o.stop(audio.currentTime+.34);
+
+      /* Two detuned square waves + low oscillator = much heavier buzzer. */
+      const now = audio.currentTime;
+      const master = audio.createGain();
+      const filter = audio.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1500;
+      master.gain.setValueAtTime(.0001,now);
+      master.gain.exponentialRampToValueAtTime(.42,now+.012);
+      master.gain.exponentialRampToValueAtTime(.0001,now+.42);
+      filter.connect(master).connect(audio.destination);
+
+      [105,110,210].forEach((freq,i)=>{
+        const o=audio.createOscillator();
+        o.type=i===2?'sawtooth':'square';
+        o.frequency.value=freq;
+        const g=audio.createGain();
+        g.gain.value=i===2?.16:.32;
+        o.connect(g).connect(filter);
+        o.start(now);
+        o.stop(now+.44);
+      });
     }catch(e){}
   }
 
@@ -313,9 +369,14 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
     disarmMotion();
     clearInterval(timerID);
     show('alarm');
+    $('alarm').classList.add('moving');
     alarmLeft=5;
     $('count').textContent='05';
     beep(); vibrate();
+    let vibrationLoop = setInterval(()=>{
+      if(state !== 'alarm'){ clearInterval(vibrationLoop); return; }
+      vibrate();
+    },900);
 
     clearInterval(alarmID);
     alarmID=setInterval(()=>{
@@ -336,8 +397,11 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
 
   async function returnToLock(){
     clearInterval(alarmID);
+    clearInterval(vibrationLoop);
+    vibrationLoop = null;
     if(navigator.vibrate) navigator.vibrate(0);
     state='lock';
+    $('alarm').classList.remove('moving');
     show('lock');
     await keepScreenAwake();
     startedAt = startedAt || Date.now();
@@ -364,6 +428,9 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
     disarmMotion();
     clearInterval(timerID);
     clearInterval(alarmID);
+    clearInterval(vibrationLoop);
+    vibrationLoop = null;
+    if(navigator.vibrate) navigator.vibrate(0);
     await releaseScreenAwake();
     try{ await document.exitFullscreen?.(); }catch(e){}
     show('start');
@@ -384,5 +451,4 @@ h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0
 })();
 </script>
 </body>
-        </html>
-  
+</html>
