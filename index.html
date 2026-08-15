@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Focus Lock</title>
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiRm9jdXMgTG9jayIsInNob3J0X25hbWUiOiJGb2N1c0xvY2siLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzA1MDcwQyIsInRoZW1lX2NvbG9yIjoiIzA1MDcwQyJ9" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root{
+    --bg:#05070C;
+    --surface:#0F131C;
+    --surface-2:#161C29;
+    --blue:#2F7BFF;
+    --blue-bright:#6FA8FF;
+    --danger:#FF3B47;
+    --amber:#FFB020;
+    --text-muted:#7C8494;
+    --line: rgba(111,168,255,0.18);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    background:var(--bg); color:#fff;
+    font-family:'Inter',system-ui,sans-serif;
+    overscroll-behavior:none;
+  }
+  #app{position:fixed; inset:0; width:100%; height:100%;}
+
+  .screen{position:absolute; inset:0; display:none; flex-direction:column;}
+  .screen.active{display:flex;}
+
+  /* ---------- Camera / placement ---------- */
+  #camera-layer{position:absolute; inset:0; overflow:hidden; background:#000;}
+  #camera-layer video{width:100%; height:100%; object-fit:cover; filter:saturate(0.85) brightness(0.9);}
+  #camera-layer::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(180deg, rgba(5,7,12,0.55) 0%, rgba(5,7,12,0) 22%, rgba(5,7,12,0) 62%, rgba(5,7,12,0.9) 100%);
+  }
+  #camera-fallback{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:10px; text-align:center; padding:40px; color:var(--text-muted);
+  }
+
+  .topbar{
+    position:absolute; top:0; left:0; right:0; z-index:5;
+    padding:max(18px, env(safe-area-inset-top)) 20px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em;
+    color:var(--blue-bright); text-transform:uppercase; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--blue-bright); box-shadow:0 0 8px var(--blue-bright);}
+  .info-btn{
+    width:32px; height:32px; border-radius:50%; border:1px solid var(--line);
+    background:rgba(15,19,28,0.7); color:var(--text-muted); font-family:'JetBrains Mono',monospace;
+    font-size:13px; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px);
+  }
+
+  /* the AR-style zone: an isometric-look cuboid (top + side + front faces), not a flat card */
+  #zone{
+    position:absolute; top:50%; left:50%;
+    width:150px; height:320px;
+    transform:translate(-50%,-50%);
+    touch-action:none;
+    z-index:4;
+  }
+  #zone.depth{ --d:22px; } /* depth of the fake-3D extrusion */
+  #zone .front{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(47,123,255,0.30), rgba(47,123,255,0.14));
+    border:1.5px solid var(--blue-bright);
+    border-radius:2px;
+  }
+  #zone .top{
+    position:absolute; left:0; right:0; top:calc(var(--d) * -1);
+    height:var(--d);
+    background:linear-gradient(180deg, rgba(111,168,255,0.55), rgba(47,123,255,0.35));
+    border:1.5px solid var(--blue-bright); border-bottom:none;
+    transform:skewX(-38deg); transform-origin:bottom left;
+    border-radius:2px 6px 0 0;
+  }
+  #zone .side{
+    position:absolute; top:0; bottom:0; right:calc(var(--d) * -1);
+    width:var(--d);
+    background:linear-gradient(180deg, rgba(24,64,140,0.6), rgba(15,40,90,0.5));
+    border:1.5px solid var(--blue-bright); border-left:none;
+    transform:skewY(-38deg); transform-origin:top left;
+    border-radius:0 4px 4px 0;
+  }
+  #zone .corner{
+    position:absolute; width:20px; height:20px; border-color:#fff; border-style:solid; border-width:0; opacity:0.9;
+  }
+  #zone .corner.tl{top:-1px; left:-1px; border-top-width:2.5px; border-left-width:2.5px;}
+  #zone .corner.bl{bottom:-1px; left:-1px; border-bottom-width:2.5px; border-left-width:2.5px;}
+  #zone .lock-icon{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:38px; height:38px; opacity:0.95; z-index:2;
+  }
+  #zone.locked .front{background:linear-gradient(180deg, rgba(47,123,255,0.42), rgba(47,123,255,0.2)); border-color:#fff;}
+  #zone.locked .top,#zone.locked .side{border-color:#fff;}
+
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:6;
+    padding:22px 22px max(26px, env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(5,7,12,0) 0%, rgba(5,7,12,0.92) 30%, var(--bg) 100%);
+    display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;
+  }
+  .sheet h1{
+    font-family:'Space Grotesk',sans-serif; font-size:21px; font-weight:600; margin:0;
+    letter-spacing:-0.01em;
+  }
+  .sheet p{margin:0; color:var(--text-muted); font-size:13.5px; line-height:1.5; max-width:320px;}
+  .hint-row{display:flex; gap:14px; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-muted); letter-spacing:0.02em;}
+  .hint-row span{display:flex; align-items:center; gap:5px;}
+
+  button{
+    font-family:'Inter',sans-serif; border:none; cursor:pointer; -webkit-appearance:none;
+  }
+  .btn-primary{
+    width:100%; max-width:360px; padding:16px; border-radius:14px;
+    background:var(--blue); color:#fff; font-size:15px; font-weight:600;
+    box-shadow:0 8px 24px rgba(47,123,255,0.35);
+    transition:transform 0.15s ease;
+  }
+  .btn-primary:active{transform:scale(0.97);}
+  .btn-ghost{
+    width:100%; max-width:360px; padding:14px; border-radius:14px;
+    background:transparent; color:var(--text-muted); font-size:14px; font-weight:500;
+    border:1px solid var(--line);
+  }
+  .btn-amber{ background:var(--amber); color:#1a1200; box-shadow:0 8px 24px rgba(255,176,32,0.3);}
+  .btn-danger{ background:var(--danger); color:#fff; box-shadow:0 8px 24px rgba(255,59,71,0.3);}
+
+  /* ---------- Lock screen ---------- */
+  #screen-lock{background:var(--bg); align-items:center; justify-content:center; position:relative;}
+  .pulse-dot{
+    width:9px; height:9px; border-radius:50%; background:var(--blue-bright);
+    animation:pulse 1.6s ease-in-out infinite; margin:0 auto 18px;
+    box-shadow:0 0 16px var(--blue-bright);
+  }
+  @keyframes pulse{0%,100%{opacity:0.35; transform:scale(0.85);} 50%{opacity:1; transform:scale(1.15);}}
+  .lock-title{
+    font-family:'JetBrains Mono',monospace; font-weight:600; font-size:15px;
+    letter-spacing:0.22em; color:var(--blue-bright); text-align:center;
+  }
+  .timer{
+    font-family:'JetBrains Mono',monospace; font-size:min(17vw,76px); font-weight:600;
+    margin:26px 0 6px; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;
+  }
+  .timer-label{color:var(--text-muted); font-size:13px; text-align:center;}
+  .lock-footer{position:absolute; bottom:max(30px, env(safe-area-inset-bottom)); left:0; right:0; display:flex; justify-content:center; padding:0 24px;}
+
+  /* ---------- Alarm / challenge ---------- */
+  #screen-alarm{
+    background:radial-gradient(circle at 50% 30%, rgba(255,59,71,0.25), var(--bg) 70%);
+    align-items:center; justify-content:center; text-align:center; padding:28px;
+  }
+  #screen-alarm.shake{animation:shake 0.35s;}
+  @keyframes shake{
+    10%,90%{transform:translateX(-1px);} 20%,80%{transform:translateX(2px);}
+    30%,50%,70%{transform:translateX(-4px);} 40%,60%{transform:translateX(4px);}
+  }
+  .alarm-title{font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:var(--danger); letter-spacing:-0.01em;}
+  .alarm-sub{color:#fff; opacity:0.85; font-size:14px; margin-top:10px; max-width:300px;}
+  .countdown-ring{margin:30px auto; width:64px; height:64px; border-radius:50%; border:3px solid rgba(255,59,71,0.3); border-top-color:var(--danger); animation:spin 1s linear infinite; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:18px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .challenge-box{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:24px; margin-top:20px; width:100%; max-width:340px;}
+  .challenge-box .q{font-family:'JetBrains Mono',monospace; font-size:22px; color:var(--amber); margin:12px 0;}
+  .challenge-box input{
+    width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--surface-2); color:#fff; font-size:16px; text-align:center;
+    font-family:'JetBrains Mono',monospace; margin-bottom:14px;
+  }
+  .challenge-box input:focus{outline:none; border-color:var(--amber);}
+  .stack{display:flex; flex-direction:column; gap:12px; width:100%; max-width:340px; margin-top:22px;}
+
+  .limits-overlay{
+    position:fixed; inset:0; z-index:50; background:rgba(5,7,12,0.92); backdrop-filter:blur(6px);
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .limits-overlay.active{display:flex;}
+  .limits-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px 20px 0 0;
+    padding:26px 22px max(26px, env(safe-area-inset-bottom)); width:100%; max-width:480px;
+    max-height:78vh; overflow-y:auto;
+  }
+  .limits-card h2{font-family:'Space Grotesk',sans-serif; font-size:19px; margin:0 0 12px;}
+  .limits-card p{color:var(--text-muted); font-size:13.5px; line-height:1.6; margin:0 0 10px;}
+  .limits-card b{color:#fff;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- PLACEMENT -->
+  <div class="screen active" id="screen-placement">
+    <div id="camera-layer">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="camera-fallback" style="display:none;">
+        <div style="font-size:34px;">📷</div>
+        <div>Camera access needed to place your focus zone.<br/>Tap below to allow it.</div>
+      </div>
+    </div>
+
+    <div class="topbar">
+      <div class="eyebrow" id="mode-label">Placement</div>
+      <button class="info-btn" onclick="toggleLimits(true)">i</button>
+    </div>
+
+    <div id="zone" class="depth">
+      <div class="top"></div>
+      <div class="side"></div>
+      <div class="front"></div>
+      <div class="corner tl"></div><div class="corner bl"></div>
+      <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8">
+        <rect x="5" y="11" width="14" height="9" rx="2"/>
+        <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+      </svg>
+    </div>
+
+    <div class="sheet">
+      <h1 id="sheet-title">Place your focus zone</h1>
+      <p id="sheet-sub">Drag to reposition. Pinch to resize. Twist with two fingers to rotate.</p>
+      <div class="hint-row">
+        <span>◐ drag</span><span>⤢ pinch</span><span>↻ rotate</span>
+      </div>
+      <button class="btn-primary" id="placement-btn" onclick="onPlacementAction()">Enable camera</button>
+    </div>
+  </div>
+
+  <!-- LOCK -->
+  <div class="screen" id="screen-lock">
+    <div style="text-align:center;">
+      <div class="pulse-dot"></div>
+      <div class="lock-title">NO TOUCHING PHONE</div>
+      <div class="timer" id="timer-display">00:00</div>
+      <div class="timer-label">time away from your phone</div>
+    </div>
+    <div class="lock-footer">
+      <button class="btn-ghost" onclick="endSessionManual()">End session (honor system)</button>
+    </div>
+  </div>
+
+  <!-- ALARM / CHALLENGE -->
+  <div class="screen" id="screen-alarm">
+    <div id="alarm-stage-1">
+      <div class="alarm-title">PHONE MOVED</div>
+      <div class="alarm-sub">Alarm stops automatically once it's back down and still.</div>
+      <div class="countdown-ring" id="countdown">10</div>
+      <div class="stack">
+        <button class="btn-primary" onclick="putBackDown()">I put it back down</button>
+        <button class="btn-amber" style="border-radius:14px; padding:14px; font-weight:600;" onclick="showChallenge()">I actually need it — let me prove it</button>
+      </div>
+    </div>
+    <div id="alarm-stage-2" style="display:none;">
+      <div class="alarm-title" style="font-size:20px;" id="challenge-heading">Prove it</div>
+      <div class="challenge-box">
+        <div id="challenge-body"></div>
+        <input id="challenge-input" type="text" placeholder="Your answer" autocomplete="off" />
+        <button class="btn-primary" style="max-width:none;" onclick="submitChallenge()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Limits / honesty overlay -->
+<div class="limits-overlay" id="limits-overlay">
+  <div class="limits-card">
+    <h2>What this app can and can't do</h2>
+    <p><b>Real:</b> camera-guided zone placement, motion-sensor detection of the phone being picked up, a running timer, a 10-second alarm with a randomized unlock challenge, screen wake-lock while locked, and fullscreen to reduce accidental exits.</p>
+    <p><b>Browser limits:</b> a web app cannot block your phone's back/home gestures, the app switcher, or the power button the way a native app with special permissions can. Switching apps or locking your screen will pause detection until you return here.</p>
+    <p><b>iOS note:</b> Safari will ask for a one-time motion-sensor permission — tap "Enable camera" to trigger that prompt too.</p>
+    <p><b>Tip:</b> for the strongest version of this, add this page to your home screen (share icon → Add to Home Screen) and open it from there — it runs full-screen with no browser chrome to accidentally tap.</p>
+    <button class="btn-ghost" style="max-width:none; margin-top:8px;" onclick="toggleLimits(false)">Got it</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------------- State ----------------
+  let state = 'placement'; // placement | locked | alarm
+  let stream = null;
+  let motionBaseline = 9.8;
+  let motionArmed = false;
+  let sessionStartMs = 0;
+  let timerInterval = null;
+  let alarmInterval = null;
+  let alarmSecondsLeft = 10;
+  let audioCtx = null;
+  let oscNodes = [];
+  let currentChallenge = null;
+  let wakeLock = null;
+
+  const zone = document.getElementById('zone');
+  const video = document.getElementById('video');
+
+  // ---------------- Camera + placement gestures ----------------
+  async function enableCamera(){
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:{ ideal:'environment' } },
+        audio:false
+      });
+      video.srcObject = stream;
+      document.getElementById('camera-fallback').style.display = 'none';
+    }catch(e){
+      document.getElementById('camera-fallback').style.display = 'flex';
+    }
+  }
+
+  // motion permission (iOS 13+ requires a user gesture)
+  async function requestMotionPermission(){
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+      try{ await DeviceMotionEvent.requestPermission(); }catch(e){}
+    }
+  }
+
+  let placementStage = 0; // 0 = need camera, 1 = adjusting, 2 = locked-in
+  window.onPlacementAction = async function(){
+    if (placementStage === 0){
+      await enableCamera();
+      await requestMotionPermission();
+      placementStage = 1;
+      document.getElementById('sheet-title').textContent = 'Place your focus zone';
+      document.getElementById('sheet-sub').textContent = 'Drag to reposition. Pinch to resize. Twist with two fingers to rotate.';
+      document.getElementById('placement-btn').textContent = 'Lock this zone';
+      document.getElementById('mode-label').textContent = 'Placement';
+    } else if (placementStage === 1){
+      placementStage = 2;
+      zone.classList.add('locked');
+      document.getElementById('sheet-title').textContent = 'Focus zone locked';
+      document.getElementById('sheet-sub').textContent = "Place your phone face-down here to begin.";
+      document.getElementById('placement-btn').textContent = 'Start session';
+      document.getElementById('mode-label').textContent = 'Ready';
+    } else {
+      startSession();
+    }
+  };
+
+  // Drag / pinch / rotate via Pointer Events
+  (function enableGestures(){
+    const pointers = new Map();
+    let start = null;
+
+    zone.addEventListener('pointerdown', (e)=>{
+      if (placementStage !== 1) return;
+      zone.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if (pointers.size === 1){
+        const rect = zone.getBoundingClientRect();
+        start = { mode:'drag', originLeft:rect.left, originTop:rect.top, px:e.clientX, py:e.clientY };
+      } else if (pointers.size === 2){
+        const pts = [...pointers.values()];
+        const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+        const dist = Math.hypot(dx,dy);
+        const angle = Math.atan2(dy,dx) * 180/Math.PI;
+        const rect = zone.getBoundingClientRect();
+        start = { mode:'transform', dist, angle, w:rect.width, h:rect.height, rot:getRotation() };
+      }
+    });
+    zone.addEventListener('pointermove', (e)=>{
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if (!start) return;
+      if (start.mode === 'drag' && pointers.size === 1){
+        const dx = e.clientX - start.px, dy = e.clientY - start.py;
+        zone.style.left = (start.originLeft + dx + zone.offsetWidth/2) + 'px';
+        zone.style.top = (start.originTop + dy + zone.offsetHeight/2) + 'px';
+      } else if (start.mode === 'transform' && pointers.size === 2){
+        const pts = [...pointers.values()];
+        const dx = pts[0].x - pts[1].x, dy = pts[0].y - pts[1].y;
+        const dist = Math.hypot(dx,dy);
+        const angle = Math.atan2(dy,dx) * 180/Math.PI;
+        const scale = dist / start.dist;
+        const newW = Math.min(280, Math.max(90, start.w * scale));
+        const newH = Math.min(520, Math.max(180, start.h * scale));
+        zone.style.width = newW + 'px';
+        zone.style.height = newH + 'px';
+        const newRot = start.rot + (angle - start.angle);
+        setRotation(newRot);
+      }
+    });
+    function endPointer(e){
+      pointers.delete(e.pointerId);
+      if (pointers.size === 0) start = null;
+    }
+    zone.addEventListener('pointerup', endPointer);
+    zone.addEventListener('pointercancel', endPointer);
+
+    function getRotation(){
+      const t = zone.style.transform || '';
+      const m = t.match(/rotate\(([-\d.]+)deg\)/);
+      return m ? parseFloat(m[1]) : 0;
+    }
+    function setRotation(deg){
+      zone.style.transform = `translate(-50%,-50%) rotate(${deg}deg)`;
+    }
+  })();
+
+  // ---------------- Session / timer ----------------
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  async function requestWakeLock(){
+    try{
+      if ('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); }
+    }catch(e){}
+  }
+  function releaseWakeLock(){
+    if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+  }
+
+  function startSession(){
+    state = 'locked';
+    showScreen('screen-lock');
+    sessionStartMs = Date.now();
+    document.documentElement.requestFullscreen?.().catch(()=>{});
+    requestWakeLock();
+    startTimer();
+    armMotion();
+  }
+
+  function startTimer(){
+    clearInterval(timerInterval);
+    timerInterval = setInterval(()=>{
+      const s = Math.floor((Date.now() - sessionStartMs)/1000);
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+      document.getElementById('timer-display').textContent =
+        h>0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+    }, 1000);
+  }
+  function pad(n){ return n.toString().padStart(2,'0'); }
+
+  window.endSessionManual = function(){
+    disarmMotion();
+    clearInterval(timerInterval);
+    releaseWakeLock();
+    document.exitFullscreen?.().catch(()=>{});
+    resetToPlacement();
+  };
+
+  function resetToPlacement(){
+    state = 'placement';
+    placementStage = 2; // keep the zone they placed
+    showScreen('screen-placement');
+    document.getElementById('sheet-title').textContent = 'Focus zone locked';
+    document.getElementById('sheet-sub').textContent = 'Place your phone face-down here to begin.';
+    document.getElementById('placement-btn').textContent = 'Start session';
+  }
+
+  // ---------------- Motion detection ----------------
+  function armMotion(){
+    motionArmed = true;
+    window.addEventListener('devicemotion', onMotion);
+  }
+  function disarmMotion(){
+    motionArmed = false;
+    window.removeEventListener('devicemotion', onMotion);
+  }
+  function onMotion(e){
+    if (!motionArmed || state !== 'locked') return;
+    const g = e.accelerationIncludingGravity || e.acceleration;
+    if (!g || g.x === null) return;
+    const mag = Math.sqrt((g.x||0)**2 + (g.y||0)**2 + (g.z||0)**2);
+    motionBaseline += 0.12 * (mag - motionBaseline);
+    if (Math.abs(motionBaseline - 9.8) > 1.8){
+      triggerAlarm();
+    }
+  }
+
+  // ---------------- Alarm + challenge ----------------
+  function triggerAlarm(){
+    if (state === 'alarm') return;
+    state = 'alarm';
+    disarmMotion();
+    showScreen('screen-alarm');
+    document.getElementById('alarm-stage-1').style.display = 'block';
+    document.getElementById('alarm-stage-2').style.display = 'none';
+    alarmSecondsLeft = 10;
+    document.getElementById('countdown').textContent = alarmSecondsLeft;
+    playAlarmTone();
+    vibrate();
+    alarmInterval = setInterval(()=>{
+      alarmSecondsLeft -= 1;
+      document.getElementById('countdown').textContent = Math.max(alarmSecondsLeft,0);
+      if (alarmSecondsLeft <= 0){
+        clearInterval(alarmInterval);
+        putBackDown();
+      }
+    }, 1000);
+  }
+
+  function playAlarmTone(){
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      stopAlarmTone();
+      const beep = ()=>{
+        if (state !== 'alarm') return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+        oscNodes.push(osc);
+      };
+      beep();
+      const id = setInterval(beep, 550);
+      oscNodes.push({stop:()=>clearInterval(id)});
+    }catch(e){}
+  }
+  function stopAlarmTone(){
+    oscNodes.forEach(n=>{ try{ n.stop && n.stop(); }catch(e){} });
+    oscNodes = [];
+  }
+  function vibrate(){
+    if (navigator.vibrate) navigator.vibrate([400,200,400,200,400,200,400,200,400,200]);
+  }
+
+  window.putBackDown = function(){
+    clearInterval(alarmInterval);
+    stopAlarmTone();
+    if (navigator.vibrate) navigator.vibrate(0);
+    state = 'locked';
+    showScreen('screen-lock');
+    armMotion();
+  };
+
+  window.showChallenge = function(){
+    document.getElementById('alarm-stage-1').style.display = 'none';
+    document.getElementById('alarm-stage-2').style.display = 'block';
+    currentChallenge = Math.random() < 0.5 ? makeMathChallenge() : makePhraseChallenge();
+    document.getElementById('challenge-input').value = '';
+    document.getElementById('challenge-input').focus();
+  };
+
+  function makeMathChallenge(){
+    const a = 10 + Math.floor(Math.random()*30), b = 2 + Math.floor(Math.random()*28);
+    document.getElementById('challenge-heading').textContent = 'Solve to unlock';
+    document.getElementById('challenge-body').innerHTML = `<div class="q">${a} + ${b} = ?</div>`;
+    document.getElementById('challenge-input').type = 'number';
+    return { type:'math', answer: a+b };
+  }
+  function makePhraseChallenge(){
+    const phrases = [
+      'I am choosing distraction over my goal',
+      'This can wait until my session ends',
+      'I am picking up my phone on purpose'
+    ];
+    const phrase = phrases[Math.floor(Math.random()*phrases.length)];
+    document.getElementById('challenge-heading').textContent = 'Type this exactly to unlock';
+    document.getElementById('challenge-body').innerHTML = `<div class="q" style="font-size:15px; color:#fff;">"${phrase}"</div>`;
+    document.getElementById('challenge-input').type = 'text';
+    return { type:'phrase', answer: phrase };
+  }
+  window.submitChallenge = function(){
+    const val = document.getElementById('challenge-input').value.trim();
+    const ok = currentChallenge.type === 'math'
+      ? parseInt(val,10) === currentChallenge.answer
+      : val === currentChallenge.answer;
+    if (ok){
+      clearInterval(alarmInterval);
+      stopAlarmTone();
+      if (navigator.vibrate) navigator.vibrate(0);
+      releaseWakeLock();
+      document.exitFullscreen?.().catch(()=>{});
+      resetToPlacement();
+    } else {
+      const el = document.getElementById('screen-alarm');
+      el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+      document.getElementById('challenge-input').value = '';
+    }
+  };
+
+  window.toggleLimits = function(show){
+    document.getElementById('limits-overlay').classList.toggle('active', show);
+  };
+
+  // Pause detection gracefully when tab is hidden; resume on return (browser limitation, disclosed in UI)
+  document.addEventListener('visibilitychange', ()=>{
+    if (document.hidden){ disarmMotion(); }
+    else if (state === 'locked'){ armMotion(); }
+  });
+})();
+</script>
+</body>
+</html>
