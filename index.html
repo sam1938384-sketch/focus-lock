@@ -1,427 +1,324 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#050507">
-<title>FOCUS // M</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Onward — Day by Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
-
+/* ============ TOKENS ============ */
 :root{
-  --bg:#050507; --panel:rgba(16,17,23,.72); --line:rgba(255,255,255,.09);
-  --text:#f5f7fb; --muted:#7e8492; --accent:#7c5cff; --accent2:#a78bfa;
-  --danger:#ff426d; --glow:rgba(124,92,255,.35);
+  --bg:#0A0C11;
+  --bg-elev:#0F1219;
+  --surface:#161A23;
+  --surface-2:#1F2430;
+  --surface-3:#2A3040;
+  --border:rgba(255,255,255,0.07);
+  --text:#EDEFF3;
+  --text-dim:#9AA0AE;
+  --text-faint:#5B6272;
+  --hydration:#4BC9D9;
+  --hydration-dim:rgba(75,201,217,0.16);
+  --activity:#F0A860;
+  --activity-dim:rgba(240,168,96,0.16);
+  --habits:#A594FF;
+  --habits-dim:rgba(165,148,255,0.16);
+  --recovery:#6FE0B0;
+  --recovery-dim:rgba(111,224,176,0.16);
+  --danger:#F2765A;
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  --radius:20px;
+  --radius-sm:14px;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
-button{font:inherit;border:0;cursor:pointer}
-#app{position:fixed;inset:0;overflow:hidden}
-.screen{position:absolute;inset:0;display:none}
-.screen.active{display:flex}
+[data-theme="light"]{
+  --bg:#F4F5F7;
+  --bg-elev:#EDEEF2;
+  --surface:#FFFFFF;
+  --surface-2:#F1F2F5;
+  --surface-3:#E5E7ED;
+  --border:rgba(10,12,20,0.08);
+  --text:#171923;
+  --text-dim:#5B6272;
+  --text-faint:#8A90A0;
+  --shadow: 0 8px 24px rgba(20,22,30,0.10);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  padding-bottom:48px;
+  transition:background .3s ease, color .3s ease;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+}
+.wrap{max-width:520px;margin:0 auto;padding:18px 16px 8px;}
+h1,h2,h3{font-family:var(--font-display); margin:0; letter-spacing:-0.01em;}
+.mono{font-family:var(--font-mono);}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
 
-#start{
-  align-items:center;justify-content:center;flex-direction:column;padding:28px;
-  background:
-    radial-gradient(circle at 50% 36%,rgba(124,92,255,.15),transparent 30%),
-    radial-gradient(circle at 20% 90%,rgba(167,139,250,.06),transparent 28%),
-    var(--bg);
-}
-.start-grid{
-  position:absolute;inset:0;opacity:.035;
-  background-image:linear-gradient(rgba(255,255,255,.8) 1px,transparent 1px),
-                   linear-gradient(90deg,rgba(255,255,255,.8) 1px,transparent 1px);
-  background-size:44px 44px;
-}
-.brand{position:relative;text-align:center}
-.logo{
-  width:76px;height:76px;border:1px solid rgba(167,139,250,.45);border-radius:24px;
-  margin:0 auto 26px;display:grid;place-items:center;
-  background:linear-gradient(145deg,rgba(124,92,255,.18),rgba(255,255,255,.025));
-  box-shadow:0 0 60px rgba(124,92,255,.18),inset 0 0 30px rgba(255,255,255,.025);
-}
-.logo span{font:700 27px 'Space Grotesk';letter-spacing:-.08em}
-.kicker{font:700 10px 'JetBrains Mono';letter-spacing:.3em;color:var(--accent2);margin-bottom:12px}
-h1{font:700 clamp(42px,13vw,68px) 'Space Grotesk';letter-spacing:-.07em;margin:0}
-.tag{color:var(--muted);font-size:14px;margin:13px 0 34px}
-.start-btn{
-  position:relative;width:min(360px,100%);padding:16px 22px;border-radius:999px;color:#fff;
-  background:linear-gradient(135deg,#7657ff,#6244e8);
-  border:1px solid rgba(255,255,255,.16);
-  box-shadow:0 14px 40px var(--glow),inset 0 1px rgba(255,255,255,.25);
-  font-weight:700;letter-spacing:.04em;overflow:hidden;
-  transition:.18s ease;
-}
-.start-btn:active{transform:scale(.97)}
-.start-btn:before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.18),transparent);transform:translateX(-100%);animation:sweep 3s infinite}
-@keyframes sweep{45%,100%{transform:translateX(100%)}}
-.micro{margin-top:15px;color:#555a66;font:10px 'JetBrains Mono';letter-spacing:.08em}
+/* ============ TOP BAR ============ */
+.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+.brand{display:flex; align-items:center; gap:9px;}
+.brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--habits),var(--hydration));display:flex;align-items:center;justify-content:center;font-size:15px;}
+.brand-name{font-family:var(--font-display); font-weight:700; font-size:17px; letter-spacing:0.02em;}
+.icon-btn{width:38px;height:38px;border-radius:12px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text-dim); transition:transform .15s ease, background .15s ease;}
+.icon-btn:active{transform:scale(0.92); background:var(--surface-2);}
 
-#lock,#alarm{overflow:hidden}
-#lock{background:#050507;align-items:center;justify-content:center;flex-direction:column}
-.m-field{
-  position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);
-  grid-template-rows:repeat(7,1fr);gap:0;overflow:hidden;pointer-events:none;user-select:none;
-  z-index:0;
-}
-.m{
-  display:grid;place-items:center;font:700 clamp(28px,8vw,58px) 'Space Grotesk';
-  color:rgba(167,139,250,.085);text-shadow:0 0 28px rgba(124,92,255,.07);
-  animation:drift 8s ease-in-out infinite alternate;
-}
-.m:nth-child(3n){animation-delay:-2s}.m:nth-child(4n){animation-delay:-5s}
-@keyframes drift{to{transform:translateY(-8px) scale(1.02)}}
-.lock-vignette{position:absolute;inset:0;background:radial-gradient(circle,transparent 20%,rgba(5,5,7,.35) 70%,#050507 100%)}
-.lock-ui{position:relative;z-index:2;width:min(390px,88%);text-align:center}
-.status{
-  display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);
-  border-radius:999px;background:rgba(12,12,17,.62);backdrop-filter:blur(14px);
-  font:10px 'JetBrains Mono';letter-spacing:.14em;color:#a9adba;
-}
-.status i{width:6px;height:6px;border-radius:50%;background:#8dffb0;box-shadow:0 0 12px #8dffb0}
-.timer{
-  margin:30px 0 8px;font:700 clamp(55px,18vw,88px) 'JetBrains Mono';
-  letter-spacing:-.07em;font-variant-numeric:tabular-nums;text-shadow:0 0 35px rgba(167,139,250,.12)
-}
-.lock-copy{font-size:12px;color:var(--muted)}
-.motivation{
-  margin:30px auto 0;padding:15px 18px;width:100%;border:1px solid var(--line);
-  border-radius:17px;background:rgba(14,14,20,.55);backdrop-filter:blur(15px);
-}
-.motivation strong{display:block;font:600 13px 'Space Grotesk';margin-bottom:5px}
-.motivation span{font-size:11px;color:#676c78}
-.end{
-  margin:20px auto 0;
-  padding:11px 17px;
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:999px;
-  color:#8d92a0;
-  font-size:11px;
-  background:rgba(16,17,23,.62);
-  backdrop-filter:blur(18px);
-  box-shadow:inset 0 1px rgba(255,255,255,.06),0 8px 28px rgba(0,0,0,.22);
-  transition:.2s ease;
-}
-.end:active{color:#fff;transform:scale(.96);border-color:rgba(167,139,250,.35)}
+/* ============ JOURNEY (signature element) ============ */
+.journey{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 18px 16px; margin-bottom:14px; box-shadow:var(--shadow);}
+.journey-top{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:4px;}
+.journey-day{font-size:13px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.09em; font-weight:600;}
+.journey-remain{font-size:12px; color:var(--text-faint);}
+.journey-count{font-family:var(--font-display); font-weight:700; font-size:30px; margin:2px 0 14px;}
+.journey-count span{color:var(--text-faint); font-size:19px; font-weight:600;}
+.journey-track{position:relative; height:8px; border-radius:99px; background:var(--surface-2); margin:6px 0 8px; overflow:visible;}
+.journey-fill{position:absolute; left:0; top:0; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--habits),var(--hydration)); transition:width .6s cubic-bezier(.4,0,.2,1);}
+.journey-marker{position:absolute; top:-4px; width:16px; height:16px; border-radius:50%; background:var(--bg); border:3px solid var(--hydration); transform:translateX(-50%); transition:left .6s cubic-bezier(.4,0,.2,1); box-shadow:0 0 0 4px var(--surface);}
+.journey-ticks{display:flex; justify-content:space-between; margin-top:2px;}
+.tick{font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); text-align:center; flex:1; position:relative;}
+.tick b{display:block; font-size:9px; color:var(--text-dim); font-weight:600; font-family:var(--font-body); margin-top:1px;}
+.journey-goal{margin-top:12px; font-size:13px; color:var(--text-dim); line-height:1.5; padding-top:12px; border-top:1px dashed var(--border);}
 
-#alarm{
-  align-items:center;justify-content:center;text-align:center;padding:25px;
-  background:radial-gradient(circle at 50% 38%,rgba(255,66,109,.18),transparent 32%),#070508;
-}
-.alarm-ui{width:min(390px,90%)}
-.alert-icon{
-  width:72px;height:72px;margin:0 auto 22px;border:1px solid rgba(255,66,109,.45);
-  border-radius:23px;display:grid;place-items:center;color:var(--danger);
-  background:rgba(255,66,109,.07);box-shadow:0 0 55px rgba(255,66,109,.15);
-  animation:alertpulse 1s infinite alternate;
-}
-.alert-icon span{font-size:28px}
-@keyframes alertpulse{to{transform:scale(1.05);box-shadow:0 0 70px rgba(255,66,109,.3)}}
-.alarm-title{font:700 31px 'Space Grotesk';letter-spacing:-.04em}
-.alarm-sub{color:#858a96;font-size:13px;line-height:1.6;margin:10px auto 27px;max-width:310px}
-.count{
-  font:700 65px 'JetBrains Mono';color:#fff;letter-spacing:-.08em;margin:8px 0 28px
-}
-.alarm-btn{
-  width:100%;padding:16px;border-radius:999px;
-  background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(222,222,228,.94));
-  color:#09090b;font-weight:700;
-  box-shadow:0 12px 35px rgba(255,255,255,.12),inset 0 1px rgba(255,255,255,.9);
-  transition:.15s ease;
-}
-.alarm-btn:active{transform:scale(.97)}
-.alarm-hint{
-  margin-top:14px;color:#4e535f;font:9px 'JetBrains Mono';letter-spacing:.12em;
-  padding:8px 12px;border:1px solid rgba(255,255,255,.06);border-radius:999px;
-  display:inline-block;background:rgba(10,10,14,.35)
-}
+/* comeback banner */
+.banner{background:var(--habits-dim); border:1px solid rgba(165,148,255,0.3); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px; font-size:13.5px; color:var(--text); display:flex; align-items:center; justify-content:space-between; gap:10px; animation:fadeIn .4s ease;}
+.banner-close{background:none;border:none;color:var(--text-faint);font-size:16px;line-height:1;padding:2px;}
 
-#alarm.moving .alarm-ui{animation:phoneShake .095s infinite}
-@keyframes phoneShake{
-  0%{transform:translate(0,0) rotate(0)}
-  20%{transform:translate(-4px,2px) rotate(-.8deg)}
-  40%{transform:translate(4px,-2px) rotate(.8deg)}
-  60%{transform:translate(-3px,-1px) rotate(-.5deg)}
-  80%{transform:translate(3px,2px) rotate(.6deg)}
-  100%{transform:translate(0,0) rotate(0)}
-}
-#alarm.moving .alarm-title{text-shadow:0 0 22px rgba(255,66,109,.75)}
-#alarm.moving .count{animation:countJolt .18s infinite}
-@keyframes countJolt{
-  50%{transform:scale(1.045);color:#fff}
-}
+/* ============ CARDS ============ */
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); animation:fadeIn .4s ease;}
+.card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+.card-title{display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:600; font-size:15px;}
+.card-link{font-size:12.5px; color:var(--text-faint); font-weight:500; background:none; border:none; padding:4px;}
+.card-link:active{opacity:0.6;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+@keyframes pop{0%{transform:scale(1);} 40%{transform:scale(1.14);} 100%{transform:scale(1);}}
 
-.toast{
-  position:absolute;z-index:20;top:max(18px,env(safe-area-inset-top));left:50%;
-  transform:translate(-50%,-130%);padding:10px 15px;border:1px solid var(--line);
-  background:rgba(15,15,21,.85);backdrop-filter:blur(16px);border-radius:999px;
-  color:#c8cbd3;font:10px 'JetBrains Mono';transition:.35s ease;white-space:nowrap
+/* Hydration */
+.hydration-row{display:flex; align-items:center; gap:16px;}
+.ring{width:82px; height:82px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 1s cubic-bezier(.4,0,.2,1);}
+.ring-inner{width:70%; height:70%; border-radius:50%; background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.ring-num{font-family:var(--font-mono); font-weight:600; font-size:16px;}
+.ring-label{font-size:9px; color:var(--text-faint); margin-top:-1px;}
+.hyd-info{flex:1;}
+.hyd-vol{font-size:13px; color:var(--text-dim); margin-bottom:10px;}
+.hyd-controls{display:flex; align-items:center; gap:10px;}
+.btn-round{width:42px; height:42px; border-radius:50%; border:none; font-size:19px; font-weight:600; display:flex; align-items:center; justify-content:center; transition:transform .12s ease;}
+.btn-round:active{transform:scale(0.88);}
+.btn-plus{background:var(--hydration); color:#04262A;}
+.btn-minus{background:var(--surface-2); color:var(--text-dim); width:32px; height:32px; font-size:15px;}
+.hyd-target-note{font-size:11px; color:var(--text-faint); margin-top:8px;}
+
+/* Activity */
+.act-stat{display:flex; align-items:baseline; gap:8px; margin-bottom:2px;}
+.act-num{font-family:var(--font-mono); font-weight:600; font-size:26px;}
+.act-unit{font-size:13px; color:var(--text-dim);}
+.act-kcal{font-size:12px; color:var(--text-faint); margin-bottom:12px;}
+.bar{height:7px; border-radius:99px; background:var(--surface-2); overflow:hidden; margin-bottom:12px;}
+.bar-fill{height:100%; border-radius:99px; transition:width .6s cubic-bezier(.4,0,.2,1);}
+.btn-primary{width:100%; padding:12px; border-radius:12px; border:none; background:var(--activity); color:#2E1A03; font-weight:600; font-size:14px;}
+.btn-primary:active{opacity:0.85;}
+.act-list{margin-top:12px; display:flex; flex-direction:column; gap:6px;}
+.act-item{display:flex; align-items:center; justify-content:space-between; background:var(--surface-2); border-radius:10px; padding:8px 10px; font-size:12.5px;}
+.act-item .del{background:none;border:none;color:var(--text-faint);font-size:15px;padding:2px 4px;}
+.disclaimer{font-size:10.5px; color:var(--text-faint); margin-top:10px; line-height:1.5; font-style:italic;}
+
+/* Habits */
+.hab-group{margin-bottom:10px;}
+.hab-group-title{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.07em; font-weight:600; margin-bottom:6px; margin-top:10px;}
+.hab-row{display:flex; align-items:center; gap:11px; padding:8px 2px; border-bottom:1px solid var(--border);}
+.hab-row:last-child{border-bottom:none;}
+.hab-check{width:22px; height:22px; border-radius:7px; border:2px solid var(--surface-3); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; transition:all .15s ease; background:transparent;}
+.hab-check.done{background:var(--habits); border-color:var(--habits); color:#1A1330; animation:pop .3s ease;}
+.hab-label{font-size:13.5px; flex:1;}
+.hab-label.done{color:var(--text-faint); text-decoration:line-through;}
+
+/* Score */
+.score-top{display:flex; align-items:center; gap:16px; margin-bottom:14px;}
+.score-num{font-family:var(--font-display); font-weight:700; font-size:38px;}
+.score-msg{font-size:13px; color:var(--text-dim); line-height:1.4; flex:1;}
+.score-breakdown{display:flex; flex-direction:column; gap:8px;}
+.sb-row{display:flex; align-items:center; gap:8px; font-size:11.5px;}
+.sb-label{width:78px; color:var(--text-dim); flex-shrink:0;}
+.sb-bar{flex:1; height:6px; border-radius:99px; background:var(--surface-2); overflow:hidden;}
+.sb-fill{height:100%; border-radius:99px;}
+.sb-pct{width:32px; text-align:right; font-family:var(--font-mono); color:var(--text-faint);}
+
+/* Streak */
+.streak-nums{display:flex; gap:18px; margin-bottom:14px;}
+.streak-item{flex:1;}
+.streak-val{font-family:var(--font-mono); font-weight:600; font-size:22px;}
+.streak-label{font-size:10.5px; color:var(--text-faint); margin-top:1px;}
+.dots-row{display:flex; gap:3px; align-items:center; margin-top:4px;}
+.dot{width:11px; height:11px; border-radius:3px; background:var(--surface-2); flex:1;}
+.dots-caption{font-size:11px; color:var(--text-faint); margin-top:8px;}
+
+/* Weekly */
+.week-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;}
+.week-stat{background:var(--surface-2); border-radius:12px; padding:10px 12px;}
+.week-stat-val{font-family:var(--font-mono); font-weight:600; font-size:16px;}
+.week-stat-label{font-size:10.5px; color:var(--text-faint); margin-top:2px;}
+.insight{font-size:12.5px; color:var(--text-dim); background:var(--surface-2); border-radius:10px; padding:10px 12px; margin-top:2px;}
+
+/* Measurements */
+.meas-entry{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:12.5px;}
+.meas-entry:last-child{border-bottom:none;}
+.meas-date{color:var(--text-faint); width:70px; flex-shrink:0;}
+.meas-vals{flex:1; color:var(--text-dim);}
+.meas-thumb{width:32px;height:32px;border-radius:8px;object-fit:cover;margin-left:8px;}
+.meas-note{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.5;}
+.empty-note{font-size:12.5px; color:var(--text-faint); padding:6px 0;}
+
+/* ============ MODALS ============ */
+.overlay{position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(2px); display:none; align-items:flex-end; justify-content:center; z-index:100;}
+.overlay.open{display:flex; animation:fadeIn .2s ease;}
+.modal{background:var(--bg-elev); width:100%; max-width:520px; max-height:88vh; overflow-y:auto; border-radius:22px 22px 0 0; padding:18px 18px 28px; animation:slideUp .3s cubic-bezier(.2,.8,.3,1);}
+@keyframes slideUp{from{transform:translateY(30px); opacity:0.4;} to{transform:translateY(0); opacity:1;}}
+.modal-handle{width:36px; height:4px; background:var(--surface-3); border-radius:99px; margin:0 auto 14px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+.modal-title{font-family:var(--font-display); font-weight:700; font-size:18px;}
+.tabs{display:flex; gap:6px; background:var(--surface); border-radius:12px; padding:4px; margin-bottom:16px;}
+.tab{flex:1; text-align:center; padding:8px; border-radius:9px; border:none; background:none; font-size:12.5px; font-weight:600; color:var(--text-faint);}
+.tab.active{background:var(--surface-2); color:var(--text);}
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:500;}
+.field input[type=number], .field input[type=text], .field input[type=date], .field select, .field textarea{
+  width:100%; padding:11px 12px; border-radius:11px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:14px;
 }
-.toast.show{transform:translate(-50%,0)}
+.field textarea{resize:vertical; min-height:56px;}
+.row2{display:flex; gap:10px;}
+.row2 .field{flex:1;}
+.preset-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; margin-bottom:10px;}
+.preset-name{font-family:var(--font-display); font-weight:600; font-size:14.5px; margin-bottom:3px;}
+.preset-sub{font-size:11.5px; color:var(--text-faint); margin-bottom:10px;}
+.btn-secondary{width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-weight:600; font-size:13px;}
+.btn-danger{background:transparent; border:1px solid rgba(242,118,90,0.35); color:var(--danger); width:100%; padding:11px; border-radius:11px; font-weight:600; font-size:13px; margin-top:6px;}
+.mini-note{background:var(--surface); border-left:3px solid var(--activity); border-radius:8px; padding:9px 11px; font-size:12px; color:var(--text-dim); margin-bottom:14px; line-height:1.5;}
+.toggle{position:relative; width:42px; height:24px; border-radius:99px; background:var(--surface-3); flex-shrink:0; border:none;}
+.toggle.on{background:var(--habits);}
+.toggle::after{content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .18s ease;}
+.toggle.on::after{transform:translateX(18px);}
+.setting-row{display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border);}
+.setting-row:last-child{border-bottom:none;}
+.setting-row .label{font-size:13.5px;}
+.setting-row .sub{font-size:11px; color:var(--text-faint); margin-top:1px;}
+
+/* Workout runner */
+.timer-display{text-align:center; padding:18px 0 14px;}
+.timer-num{font-family:var(--font-mono); font-weight:600; font-size:40px;}
+.timer-controls{display:flex; gap:10px; justify-content:center; margin-bottom:18px;}
+.timer-btn{padding:10px 22px; border-radius:11px; border:none; font-weight:600; font-size:13px;}
+.wo-row{display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--border);}
+.wo-row:last-child{border-bottom:none;}
+.wo-info{flex:1;}
+.wo-name{font-size:14px; font-weight:500;}
+.wo-reps{font-size:11.5px; color:var(--text-faint);}
+.wo-check{width:26px; height:26px; border-radius:8px; border:2px solid var(--surface-3); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; background:transparent;}
+.wo-check.done{background:var(--activity); border-color:var(--activity); color:#2E1A03;}
+.wo-rounds{display:flex; gap:5px;}
+.rnd-btn{width:26px; height:26px; border-radius:7px; border:2px solid var(--surface-3); background:transparent; font-size:10px; color:var(--text-faint); font-family:var(--font-mono);}
+.rnd-btn.done{background:var(--activity); border-color:var(--activity); color:#2E1A03;}
+
+/* habit editor rows */
+.he-row{display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border);}
+.he-row input[type=text]{flex:1; padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:13px;}
+.he-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface); color:var(--text-dim); font-size:13px; flex-shrink:0;}
+.he-add{display:flex; gap:8px; margin-top:10px;}
+.he-add select{padding:8px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:12px;}
+
+/* toast */
+#toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-3); color:var(--text); padding:11px 18px; border-radius:99px; font-size:13px; font-weight:500; opacity:0; pointer-events:none; transition:all .3s cubic-bezier(.3,.8,.4,1); z-index:200; box-shadow:var(--shadow); white-space:nowrap;}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
-<div id="app">
+<div class="wrap">
 
-  <section id="start" class="screen active">
-    <div class="start-grid"></div>
+  <div class="topbar">
     <div class="brand">
-      <div class="logo"><span>𝐌</span></div>
-      <div class="kicker">FOCUS LOCK</div>
-      <h1>LOCK IN.</h1>
-      <div class="tag">Put the phone down. Let your goal get louder.</div>
-      <button class="start-btn" id="startBtn">START SESSION</button>
-      <div class="micro">MOTION DETECTION • SCREEN WAKE LOCK</div>
+      <div class="brand-mark">🗿</div>
+      <div class="brand-name">ONWARD</div>
     </div>
-  </section>
+    <button class="icon-btn" id="btnSettings" aria-label="Settings">⚙️</button>
+  </div>
 
-  <section id="lock" class="screen">
-    <div class="m-field" id="mField"></div>
-    <div class="lock-vignette"></div>
-    <div class="lock-ui">
-      <div class="status"><i></i><span>SESSION ACTIVE</span></div>
-      <div class="timer" id="timer">00:00</div>
-      <div class="lock-copy">phone down • focus up</div>
-      <div class="motivation">
-        <strong>YOU'RE BUILDING THE VERSION OF YOU THAT WINS.</strong>
-        <span>Every minute untouched is a vote for your future.</span>
+  <div id="banner"></div>
+
+  <!-- JOURNEY -->
+  <div class="journey">
+    <div class="journey-top">
+      <div class="journey-day" id="journeyDay">DAY — / —</div>
+      <div class="journey-remain" id="journeyRemain"></div>
+    </div>
+    <div class="journey-count" id="journeyCount">— <span>days in</span></div>
+    <div class="journey-track">
+      <div class="journey-fill" id="journeyFill"></div>
+      <div class="journey-marker" id="journeyMarker"></div>
+    </div>
+    <div class="journey-ticks" id="journeyTicks"></div>
+    <div class="journey-goal">Become leaner, fitter, stronger, healthier and more consistent — day by day, no target weight, no finish-line panic.</div>
+  </div>
+
+  <!-- HYDRATION -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">💧 Water</div>
+    </div>
+    <div class="hydration-row">
+      <div class="ring" id="hydRing"><div class="ring-inner"><div class="ring-num" id="hydRingNum">0/8</div><div class="ring-label">glasses</div></div></div>
+      <div class="hyd-info">
+        <div class="hyd-vol" id="hydVol">≈ 0 L</div>
+        <div class="hyd-controls">
+          <button class="btn-round btn-minus" id="btnWaterMinus">−</button>
+          <button class="btn-round btn-plus" id="btnWaterPlus">+</button>
+        </div>
+        <div class="hyd-target-note" id="hydTargetNote"></div>
       </div>
-      <button class="end" id="endBtn">END SESSION</button>
     </div>
-  </section>
+  </div>
 
-  <section id="alarm" class="screen">
-    <div class="m-field" id="alarmMField"></div>
-    <div class="lock-vignette"></div>
-    <div class="alarm-ui">
-      <div class="alert-icon"><span>!</span></div>
-      <div class="alarm-title">PHONE MOVED.</div>
-      <div class="alarm-sub">Put it back down or regret it later.</div>
-      <div class="count" id="count">05</div>
-      <button class="alarm-btn" id="backBtn">I PUT IT BACK DOWN</button>
-      <div class="alarm-hint">MOTION DETECTED • RETURN TO STILLNESS</div>
+  <!-- ACTIVITY -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">🏋️ Activity</div></div>
+    <div class="act-stat"><span class="act-num" id="actMin">0</span><span class="act-unit">min active</span></div>
+    <div class="act-kcal" id="actKcal">Estimated energy expenditure: ~0 kcal</div>
+    <div class="bar"><div class="bar-fill" id="actBarFill" style="background:var(--activity); width:0%;"></div></div>
+    <button class="btn-primary" id="btnLogActivity">Log Activity</button>
+    <div class="act-list" id="actList"></div>
+    <div class="disclaimer">Calories are estimates and can vary substantially. Use activity time and consistency as your main metrics.</div>
+  </div>
+
+  <!-- HABITS -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">✅ Daily Habits</div>
+      <button class="card-link" id="btnEditHabits">Edit</button>
     </div>
-  </section>
+    <div id="habitsList"></div>
+  </div>
 
-  <div class="toast" id="toast"></div>
-</div>
+  <!-- SCORE -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">🔥 Consistency</div></div>
+    <div class="score-top">
+      <div class="score-num" id="scoreNum">—</div>
+      <div class="score-msg" id="scoreMsg"></div>
+    </div>
+    <div class="score-breakdown" id="scoreBreakdown"></div>
+  </div>
 
-<script>
-(() => {
-  'use strict';
-
-  const $ = id => document.getElementById(id);
-  const screens = [...document.querySelectorAll('.screen')];
-
-  let state = 'start';
-  let startedAt = 0;
-  let timerID = null;
-  let alarmID = null;
-  let alarmLeft = 5;
-  let wakeLock = null;
-  let motionSamples = [];
-  let motionArmedAt = 0;
-  let movingTimeout = null;
-
-  function buildMField(field, count=28){
-    for(let i=0;i<count;i++){
-      const m = document.createElement('div');
-      m.className = 'm';
-      m.textContent = 'M';
-      field.appendChild(m);
-    }
-  }
-  buildMField($('mField'),28);
-  buildMField($('alarmMField'),28);
-
-  function show(id){
-    screens.forEach(s => s.classList.remove('active'));
-    $(id).classList.add('active');
-  }
-
-  function toast(text){
-    const t = $('toast');
-    t.textContent = text;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 1800);
-  }
-
-  async function requestMotion(){
-    if(typeof DeviceMotionEvent !== 'undefined' &&
-       typeof DeviceMotionEvent.requestPermission === 'function'){
-      try { await DeviceMotionEvent.requestPermission(); } catch(e) {}
-    }
-  }
-
-  async function keepScreenAwake(){
-    try{
-      if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-    }catch(e){}
-  }
-
-  async function releaseScreenAwake(){
-    try{
-      if(wakeLock){ await wakeLock.release(); wakeLock = null; }
-    }catch(e){ wakeLock = null; }
-  }
-
-  function startTimer(){
-    clearInterval(timerID);
-    timerID = setInterval(() => {
-      const s = Math.floor((Date.now() - startedAt)/1000);
-      const h = Math.floor(s/3600);
-      const m = Math.floor((s%3600)/60);
-      const sec = s%60;
-      $('timer').textContent =
-        h ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
-          : `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-    },250);
-  }
-
-  function armMotion(){
-    motionSamples = [];
-    motionArmedAt = Date.now() + 1200;
-    window.addEventListener('devicemotion', onMotion, {passive:true});
-  }
-
-  function disarmMotion(){
-    window.removeEventListener('devicemotion', onMotion);
-  }
-
-  function onMotion(e){
-    if(Date.now() < motionArmedAt) return;
-
-    const g = e.accelerationIncludingGravity || e.acceleration;
-    if(!g || g.x == null || g.y == null || g.z == null) return;
-
-    const mag = Math.hypot(g.x || 0, g.y || 0, g.z || 0);
-    const now = performance.now();
-
-    motionSamples.push({mag,now});
-    while(motionSamples.length && now-motionSamples[0].now > 900)
-      motionSamples.shift();
-
-    if(!motionSamples.length) return;
-
-    const oldest = motionSamples[0];
-    const delta = Math.abs(mag - oldest.mag);
-    const recent = motionSamples.slice(-4);
-    const average = recent.reduce((a,b)=>a+b.mag,0)/recent.length;
-    const disturbed = delta > 2.2 || Math.abs(average - 9.8) > 2.4;
-
-    if(state === 'lock' && disturbed){
-      triggerAlarm();
-      return;
-    }
-
-    // While alarm is active, use continued motion to drive the shake animation.
-    if(state === 'alarm'){
-      if(disturbed){
-        $('alarm').classList.add('moving');
-        clearTimeout(movingTimeout);
-        movingTimeout = setTimeout(() => $('alarm').classList.remove('moving'), 350);
-      }
-    }
-  }
-
-  // ---------------- Alarm sound: synthesized, not a fixed audio file ----------------
-  let audioCtx = null;
-  let alarmToneID = null;
-
-  function playAlarmSound(){
-    try{
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      stopAlarmSound();
-      const beep = (freq, delay, dur) => {
-        const t0 = audioCtx.currentTime + delay;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, t0);
-        gain.gain.setValueAtTime(0, t0);
-        gain.gain.linearRampToValueAtTime(0.18, t0 + 0.03);
-        gain.gain.linearRampToValueAtTime(0, t0 + dur);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(t0);
-        osc.stop(t0 + dur + 0.02);
-      };
-      const cycle = () => {
-        if(state !== 'alarm') return;
-        beep(880, 0, 0.16);
-        beep(660, 0.22, 0.16);
-      };
-      cycle();
-      alarmToneID = setInterval(cycle, 550);
-    }catch(e){}
-  }
-
-  function stopAlarmSound(){
-    if(alarmToneID){ clearInterval(alarmToneID); alarmToneID = null; }
-  }
-
-  // ---------------- Session flow ----------------
-  async function startSession(){
-    await requestMotion();
-    state = 'lock';
-    startedAt = Date.now();
-    show('lock');
-    toast('Session started — phone down.');
-    keepScreenAwake();
-    startTimer();
-    armMotion();
-  }
-
-  function endSession(){
-    disarmMotion();
-    clearInterval(timerID);
-    clearInterval(alarmID);
-    stopAlarmSound();
-    releaseScreenAwake();
-    document.exitFullscreen?.().catch(()=>{});
-    state = 'start';
-    show('start');
-    toast('Session ended.');
-  }
-
-  function triggerAlarm(){
-    if(state === 'alarm') return;
-    state = 'alarm';
-    show('alarm');
-    alarmLeft = 5;
-    $('count').textContent = String(alarmLeft).padStart(2,'0');
-    playAlarmSound();
-    if(navigator.vibrate) navigator.vibrate([300,150,300,150,300,150,300,150,300,150]);
-    clearInterval(alarmID);
-    alarmID = setInterval(() => {
-      alarmLeft -= 1;
-      $('count').textContent = String(Math.max(alarmLeft,0)).padStart(2,'0');
-      if(alarmLeft <= 0){
-        clearInterval(alarmID);
-        resolveAlarm();
-      }
-    }, 1000);
-  }
-
-  function resolveAlarm(){
-    clearInterval(alarmID);
-    stopAlarmSound();
-    if(navigator.vibrate) navigator.vibrate(0);
-    $('alarm').classList.remove('moving');
-    state = 'lock';
-    show('lock');
-    toast('Welcome back.');
-    armMotion(); // brief grace period before re-arming, handled by motionArmedAt
-  }
-
-  $('startBtn').addEventListener('click', startSession);
-  $('endBtn').addEventListener('click', endSession);
-  $('backBtn').addEventListener('click', resolveAlarm);
-
-  document.addEventListener('visibilitychange', () => {
-    if(document.hidden){ disarmMotion(); }
-    else if(state === 'lock' || state === 'alarm'){ armMotion(); }
-  });
-})();
-</script>
-</body>
-                               </html>
+  <!-- STREAK -->
+  <div class="card">
+    <div class="card-head"><div class="card-title">📈 Streaks</div></div>
+    <div class="streak-nums">
+      <div class="streak-item"><div class="streak-val" id="streakCurrent">0</div><div class="streak-label">current streak</div></div>
+      <div class="streak-item"><div class="streak-val" id="streakBest">0</div><div class="streak-label">best streak</div></div>
+      <div c
